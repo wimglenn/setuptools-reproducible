@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools_reproducible"
+backend-path = ["."]
+
+[project]
+name = "setuptools-reproducible"
+version = "0.1"
+requires-python = ">= 3.8"
+description = "Extension of setuptools to support reproducible dists"
+authors = [
+    {name = "Wim Jeantine-Glenn"},
+    {email = "hey@wimglenn.com"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = ["setuptools"]
+
+[project.urls]
+Homepage = "https://github.com/wimglenn/setuptools-reproducible"
