@@ -26,10 +26,13 @@ backend-path = ["."]
 name = "mypkg"
 version = "0.1"
 readme = "README.md"
+
+[tool.setuptools]
+packages = ["mypkg"]
 """
 
 
-expected_sdist_hash = "2334f998fdc8ed7726f1b383ee8ba6b9b0e562773466ff511a6b77af6ce2a16b"
+expected_sdist_hash = "6ca51028923406531996ae5806aacf52460f53a3626b9b041a118a98c52bf84a"
 expected_wheel_hash = "3d0505345d640e69471db33208d4bb0e343c8efc489f59907d1f9a5c57413b8e"
 
 
@@ -49,10 +52,10 @@ def in_srctree(tmp_path):
 
 @pytest.fixture
 def srctree_modern(in_srctree):
-    in_srctree.joinpath("README.md").write_text(example_readme)
-    in_srctree.joinpath("pyproject.toml").write_text(example_pyproject)
+    in_srctree.joinpath("README.md").write_text(example_readme, encoding="utf8")
+    in_srctree.joinpath("pyproject.toml").write_text(example_pyproject, encoding="utf8")
     in_srctree.joinpath("mypkg").mkdir()
-    in_srctree.joinpath("mypkg").joinpath("__init__.py").write_text("")
+    in_srctree.joinpath("mypkg").joinpath("__init__.py").write_text("", encoding="utf8")
     mod1 = in_srctree / "mypkg" / "mod1.py"
     mod2 = in_srctree / "mypkg" / "mod2.py"
     mod1.write_text("")

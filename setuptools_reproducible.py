@@ -2,7 +2,6 @@ import os
 import stat
 import tarfile
 from contextlib import contextmanager
-from time import localtime
 from types import SimpleNamespace
 
 from setuptools.build_meta import *
@@ -38,13 +37,9 @@ class FixedAttr:
         pass
 
 
-def _as_float():
-    return float(max(int(os.environ["SOURCE_DATE_EPOCH"]), 0))
-
-
 class TarInfoNew(tarfile.TarInfo):
     mode = FixedMode()
-    mtime = FixedAttr(_as_float)
+    mtime = FixedAttr(lambda: float(os.environ["SOURCE_DATE_EPOCH"]))
     uid = FixedAttr(0)
     gid = FixedAttr(0)
     uname = FixedAttr("")
@@ -58,9 +53,7 @@ def monkey():
     if (source_date_epoch_orig := os.environ.get("SOURCE_DATE_EPOCH")) is None:
         os.environ["SOURCE_DATE_EPOCH"] = "0"  # 1970-01-01 00:00:00 UTC
     tarfile.TarFile.tarinfo = TarInfoNew
-    tarfile.time = SimpleNamespace(
-        time=_as_float, localtime=lambda t=None, /: localtime(_as_float())
-    )
+    tarfile.time = SimpleNamespace(time=lambda: float(os.environ["SOURCE_DATE_EPOCH"]))
     try:
         yield
     finally:
