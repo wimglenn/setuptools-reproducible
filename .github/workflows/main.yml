@@ -26,10 +26,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install
-        run: pip install . pytest-cov
+        run: pip install -U pip setuptools pytest-cov wheel .
       - name: Run tests for ${{ matrix.python-version }} on ${{ matrix.os }}
         run: pytest --cov=setuptools_reproducible
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

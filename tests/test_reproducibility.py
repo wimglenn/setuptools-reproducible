@@ -1,6 +1,7 @@
 import hashlib
 import os
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -26,11 +27,10 @@ backend-path = ["."]
 name = "mypkg"
 version = "0.1"
 readme = "README.md"
+
+[tool.setuptools]
+packages = ["mypkg"]
 """
-
-
-expected_sdist_hash = "2334f998fdc8ed7726f1b383ee8ba6b9b0e562773466ff511a6b77af6ce2a16b"
-expected_wheel_hash = "3d0505345d640e69471db33208d4bb0e343c8efc489f59907d1f9a5c57413b8e"
 
 
 def sha256sum(path):
@@ -38,36 +38,56 @@ def sha256sum(path):
 
 
 @pytest.fixture(autouse=True)
-def in_srctree(tmp_path):
-    prev = os.getcwd()
-    os.chdir(tmp_path)
-    try:
-        yield tmp_path
-    finally:
-        os.chdir(prev)
-
-
-@pytest.fixture
-def srctree_modern(in_srctree):
-    in_srctree.joinpath("README.md").write_text(example_readme)
-    in_srctree.joinpath("pyproject.toml").write_text(example_pyproject)
-    in_srctree.joinpath("mypkg").mkdir()
-    in_srctree.joinpath("mypkg").joinpath("__init__.py").write_text("")
-    mod1 = in_srctree / "mypkg" / "mod1.py"
-    mod2 = in_srctree / "mypkg" / "mod2.py"
-    mod1.write_text("")
-    mod2.write_text("")
+def srctrees(tmp_path):
+    for src in "src1", "src2":
+        path = tmp_path / src
+        path.mkdir()
+        path.joinpath("README.md").write_text(example_readme, encoding="utf8")
+        path.joinpath("pyproject.toml").write_text(example_pyproject, encoding="utf8")
+        path.joinpath("mypkg").mkdir()
+        path.joinpath("mypkg").joinpath("__init__.py").write_text("", encoding="utf8")
+        mod1 = path / "mypkg" / "mod1.py"
+        mod2 = path / "mypkg" / "mod2.py"
+        mod1.write_text("")
+        mod2.write_text("")
+        shutil.copy(backend, path)
+    # we now have identical source trees in src1, src2.
+    # let's fudge one of their modes and times...
     mod1.chmod(0o644)
     mod2.chmod(0o666)
-    shutil.copy(backend, in_srctree)
-    yield in_srctree
+    st = mod2.stat()
+    os.utime(mod2, (st.st_atime - 60, st.st_mtime - 70))
+    yield tmp_path.joinpath("src1"), tmp_path.joinpath("src2")
 
 
-def test_sdist_reproducibility(srctree_modern):
-    sdist = setuptools_reproducible.build_sdist(str(srctree_modern))
-    assert sha256sum(srctree_modern / sdist) == expected_sdist_hash
+@contextmanager
+def working_directory(path):
+    """Change working directory and restore the previous on exit"""
+    prev_dir = os.getcwd()
+    os.chdir(str(path))
+    try:
+        yield str(path)
+    finally:
+        os.chdir(prev_dir)
 
 
-def test_wheel_reproducibility(srctree_modern):
-    wheel = setuptools_reproducible.build_wheel(str(srctree_modern))
-    assert sha256sum(srctree_modern / wheel) == expected_wheel_hash
+def test_sdist_reproducibility(srctrees):
+    path1, path2 = srctrees
+    with working_directory(path1) as d:
+        path1 /= setuptools_reproducible.build_sdist(d)
+    with working_directory(path2) as d:
+        path2 /= setuptools_reproducible.build_sdist(d)
+    assert path1 != path2
+    assert path1.name == path2.name == "mypkg-0.1.tar.gz"
+    assert sha256sum(path1) == sha256sum(path2)
+
+
+def test_wheel_reproducibility(srctrees):
+    path1, path2 = srctrees
+    with working_directory(path1) as d:
+        path1 /= setuptools_reproducible.build_wheel(d)
+    with working_directory(path2) as d:
+        path2 /= setuptools_reproducible.build_wheel(d)
+    assert path1 != path2
+    assert path1.name == path2.name == "mypkg-0.1-py3-none-any.whl"
+    assert sha256sum(path1) == sha256sum(path2)

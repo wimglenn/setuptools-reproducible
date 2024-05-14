@@ -11,8 +11,9 @@ setuptools-reproducible wraps the hooks [`build_sdist`][5] and [`build_wheel`][6
 - The uid/gid of archive members are set to 0, and the username/groupname are set to empty string.
 - Gzip header values set to source date epoch.
 
-With these modifications, a source tree with the same content should result in a built package with the same checksum.
+With these modifications, a source tree with the same content should result in a built package with the same checksum when created within the same build environment.
 
+_Note_: checksums are not necessarily constant across platform and Python versions, due to differences such Windows/Unix line endings and Python standard library changes.
 
 ### Usage:
 
@@ -33,7 +34,7 @@ Setting `SOURCE_DATE_EPOCH` is unnecessary, unless you want to override the defa
 This implementation was inspired by a helpful comment from [Lisandro Dalcin][7] in [setuptools issue #2133][8], and also used some ideas from the project [repro-tarfile][9].
 
 [1]: https://peps.python.org/pep-0517/#build-backend-interface
-[2]: https://reproducible-builds.org/
+[2]: https://reproducible-builds.org/docs/definition/
 [3]: https://setuptools.pypa.io/en/latest/
 [4]: https://reproducible-builds.org/docs/source-date-epoch/
 [5]: https://peps.python.org/pep-0517/#build-sdist
