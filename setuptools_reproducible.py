@@ -50,7 +50,8 @@ class TarInfoNew(tarfile.TarInfo):
 def monkey():
     tarfile_time_orig = tarfile.time
     tarinfo_orig = tarfile.TarFile.tarinfo
-    if (source_date_epoch_orig := os.environ.get("SOURCE_DATE_EPOCH")) is None:
+    source_date_epoch_orig = os.environ.get("SOURCE_DATE_EPOCH")
+    if source_date_epoch_orig is None:
         os.environ["SOURCE_DATE_EPOCH"] = "0"  # 1970-01-01 00:00:00 UTC
     tarfile.TarFile.tarinfo = TarInfoNew
     tarfile.time = SimpleNamespace(time=lambda: float(os.environ["SOURCE_DATE_EPOCH"]))
